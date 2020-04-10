@@ -33,6 +33,10 @@ jobs:
     - name: Clone source code
       run: |
         git clone --depth=1 https://github.com/chongshengB/rt-n56u.git /opt/rt-n56u
+        
+        cd /opt/rt-n56u
+        echo "::set-env name=PADAVAN_VERSION::$(git show-ref --heads -s)"
+        
         cd /opt/rt-n56u/toolchain-mipsel
         mkdir -p toolchain-3.4.x
         wget https://github.com/hanwckf/padavan-toolchain/releases/download/v1.1/mipsel-linux-uclibc.tar.xz
@@ -98,9 +102,26 @@ jobs:
         sudo ./clear_tree
         sudo ./build_firmware_bkye $TNAME
         sudo mv -f images/*.trx /opt/images/
-    - name : Upload packages
-      uses: actions/upload-artifact@master
-      if: always()
+#    - name : Upload packages
+#      uses: actions/upload-artifact@master
+#      if: always()
+#      with:
+#        name: Padavan-packages
+#        path: /opt/images
+
+    - name: Create Release
+      id: create_release
+      uses: ncipollo/release-action@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
       with:
-        name: Padavan-packages
-        path: /opt/images
+        artifacts: "/opt/images/*.trx"
+        allowUpdates: true 
+        commit: master 
+        tag: build_${{ env.PADAVAN_VERSION }}
+        body: |
+          this is only a latest build from master
+          version: https://github.com/chongshengB/rt-n56u/commit/${{ env.PADAVAN_VERSION }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+        draft: false
+        prerelease: false
